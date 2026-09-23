@@ -48,7 +48,7 @@ h1{font-size:1.7rem;font-weight:800;letter-spacing:-.02em;margin:0;line-height:1
 .btn.danger{color:var(--bad)}
 .btn.ghost{background:transparent;border-color:transparent}
 
-.stats{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:18px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);background:var(--surface);border:1px solid var(--line);border-radius:12px;margin-bottom:18px}
 .stat{padding:14px 18px;border-left:1px solid var(--line)}
 .stat:first-child{border-left:0}
 .stat .v{font-size:1.55rem;font-weight:800;letter-spacing:-.01em}
@@ -128,8 +128,9 @@ label.f textarea{min-height:64px;resize:vertical}
 
 @media (max-width:820px){
   .stats{grid-template-columns:1fr 1fr}
-  .stat:nth-child(3){border-left:0}
+  .stat:nth-child(odd){border-left:0}
   .stat:nth-child(n+3){border-top:1px solid var(--line)}
+  .stat.credit{grid-column:1/-1}
   .row.head{display:none}
   .row{grid-template-columns:1fr 1fr;gap:10px 14px}
   .row .c-id{grid-column:1/-1}
@@ -175,9 +176,55 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
   .fab{display:flex;position:fixed;right:18px;bottom:calc(20px + env(safe-area-inset-bottom,0px));width:60px;height:60px;border-radius:50%;background:var(--accent);color:var(--accent-ink);border:0;font-size:32px;line-height:1;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.28);z-index:5;cursor:pointer}
   .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px));max-width:calc(100vw - 32px);text-align:center}
 }
+
+/* ---- écran de verrouillage ---- */
+body.locked .wrap,body.locked .fab{display:none!important}
+.gate{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;padding-top:calc(24px + env(safe-area-inset-top,0px))}
+.gate[hidden]{display:none}
+.gate-box{width:min(360px,100%);text-align:center}
+.gate-box svg{width:76px;height:76px;border-radius:20px}
+.gate-box h2{margin:14px 0 4px;font-size:1.35rem}
+.gate-box p{color:var(--muted);margin:0 0 18px}
+.gate-box input{display:block;width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:14px;font-size:18px;text-align:center;margin-bottom:10px}
+.gate-box input[hidden]{display:none}
+.gate-box .btn{width:100%;padding:14px;font-size:1rem}
+.gate-box p.err{color:var(--bad);margin:0 0 10px}
+.gate-links{margin-top:16px;min-height:1.5em}
+.gate-links button{border:0;background:none;color:var(--muted);text-decoration:underline;cursor:pointer;font-size:.92rem;padding:6px}
+
+.stat.credit{cursor:pointer}
+.stat.credit .v{color:var(--bad)}
+.stat.credit:hover{background:var(--bad-bg)}
+.credit-sum{display:none;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bad-bg);border:1px solid var(--line);border-radius:10px;padding:12px 16px;margin-bottom:10px;font-weight:600}
+.credit-sum.on{display:flex}
+.credit-sum b{color:var(--bad);font-size:1.15rem}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg label{flex:1;text-align:center;padding:10px;cursor:pointer;font-weight:600;font-size:.92rem;border-left:1px solid var(--line)}
+.seg label:first-child{border-left:0}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--ink);color:var(--bg)}
+.seg label:focus-within{outline:2px solid var(--accent);outline-offset:-2px}
+.reste{font-size:.92rem;color:var(--muted)}
+.reste b{color:var(--bad)}
+.reste b.zero{color:var(--ok)}
 </style>
 </head>
-<body>
+<body class="locked">
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#15263D"/><path d="M13 27a22 22 0 0 1 38 0" fill="none" stroke="#E07B00" stroke-width="4" stroke-linecap="round"/><path d="M20 31a14 14 0 0 1 24 0" fill="none" stroke="#E07B00" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="37" r="4.5" fill="#E07B00"/><path d="M32 41v10M25 51h14" stroke="#EEF2F5" stroke-width="3.5" stroke-linecap="round"/></svg>
+    <h2 id="gateH">Comptes Starlink clients</h2>
+    <p id="gateP">Chargement…</p>
+    <form id="gateForm" autocomplete="off">
+      <input id="gCur" type="password" placeholder="Mot de passe actuel" hidden>
+      <input id="gN1" type="password" placeholder="Mot de passe">
+      <input id="gN2" type="password" placeholder="Confirmer le mot de passe" hidden>
+      <p class="err" id="gateErr"></p>
+      <button class="btn primary" id="gateBtn" type="submit">Ouvrir</button>
+    </form>
+    <div class="gate-links"><button type="button" id="gateLink"></button></div>
+  </div>
+</div>
 <div class="wrap">
   <header class="top">
     <div class="brand">
@@ -188,6 +235,7 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
       </div>
     </div>
     <div class="top-actions">
+      <button class="btn" id="btnLockNow">Verrouiller</button>
       <button class="btn" id="btnExport">Sauvegarder</button>
       <button class="btn" id="btnImport">Restaurer</button>
       <button class="btn primary" id="btnAdd">Ajouter un client</button>
@@ -200,6 +248,7 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
     <div class="stat warn"><div class="v" id="stSoon">0</div><div class="l">À renouveler sous 7 jours</div></div>
     <div class="stat bad"><div class="v" id="stExp">0</div><div class="l">Expirés</div></div>
     <div class="stat ok"><div class="v" id="stProfit">0</div><div class="l">Bénéfice mensuel (actifs)</div></div>
+    <div class="stat credit" id="stCreditBox" role="button" tabindex="0"><div class="v" id="stCredit">0 F</div><div class="l" id="stCreditL">Crédits à recevoir</div></div>
   </section>
 
   <div class="banner" id="banner"><p id="bannerText"></p><button class="btn primary small" id="bannerBtn"></button></div>
@@ -211,12 +260,15 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
       <button class="chip" data-f="ok" aria-pressed="false">Actifs</button>
       <button class="chip" data-f="warn" aria-pressed="false">Bientôt</button>
       <button class="chip" data-f="bad" aria-pressed="false">Expirés</button>
-      <button class="chip" data-f="unpaid" aria-pressed="false">Non payés</button>
+      <button class="chip" data-f="credit" aria-pressed="false">Crédits</button>
     </div>
   </div>
 
+  <div class="credit-sum" id="creditSum"><span id="creditSumL"></span><b id="creditSumV"></b></div>
   <div class="list" id="list"></div>
   <p class="foot" id="foot"></p>
+  <p class="foot"><button class="btn small" id="btnRappels">Activer les rappels d'échéance</button></p>
+  <p class="foot"><button class="icon-btn" id="btnChangePw" style="padding-left:0">Changer le mot de passe de l'appli</button></p>
 </div>
 
 <!-- Client form -->
@@ -243,7 +295,13 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
         <label class="f">Prix Starlink (ce que vous payez)<input name="prixStarlink" type="number" min="0" step="1" inputmode="numeric"></label>
         <label class="f">Prix client (ce qu'il vous paie)<input name="prixClient" type="number" min="0" step="1" inputmode="numeric"></label>
         <div class="full marge-live" id="margeLive"></div>
-        <label class="check full"><input type="checkbox" name="paye"> Le client a payé ce mois</label>
+        <div class="full">
+          <div class="seg" role="radiogroup" aria-label="Paiement du client">
+            <label><input type="radio" name="modePay" value="paye" checked> Payé</label>
+            <label><input type="radio" name="modePay" value="credit"> À crédit</label>
+          </div>
+        </div>
+        <label class="f full" id="creditWrap">Crédit : reste à payer par le client (F)<input name="credit" type="number" min="0" step="1" inputmode="numeric"><span class="hint">Montant total que le client vous doit encore.</span></label>
         <label class="f full">Notes<textarea name="notes" placeholder="Lieu d'installation, mode de paiement du client…"></textarea></label>
       </div>
       <div id="histWrap"></div>
@@ -265,10 +323,34 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
         <label class="f">Payé le<input name="date" type="date" required></label>
         <label class="f">Prix Starlink payé<input name="prixStarlink" type="number" min="0" step="1" inputmode="numeric"></label>
         <label class="f">Prix client<input name="prixClient" type="number" min="0" step="1" inputmode="numeric"></label>
-        <label class="check full"><input type="checkbox" name="paye"> Le client a déjà payé</label>
+        <div class="full">
+          <div class="seg" role="radiogroup" aria-label="Paiement du client">
+            <label><input type="radio" name="modePay" value="paye" checked> Payé</label>
+            <label><input type="radio" name="modePay" value="partiel"> En partie</label>
+            <label><input type="radio" name="modePay" value="credit"> À crédit</label>
+          </div>
+        </div>
+        <label class="f full" id="recuWrap">Montant reçu du client (F)<input name="recu" type="number" min="0" step="1" inputmode="numeric"></label>
+        <div class="full reste" id="renewReste"></div>
       </div>
     </div>
     <div class="dlg-foot"><div class="r"><button type="button" class="btn" data-close>Annuler</button><button type="submit" class="btn primary">Renouveler</button></div></div>
+  </form>
+</dialog>
+
+<!-- Encaisser un crédit -->
+<dialog id="dlgPay">
+  <form method="dialog" id="formPay">
+    <div class="dlg-head"><h2 id="payTitle">Encaisser</h2><button type="button" class="btn ghost" data-close aria-label="Fermer">✕</button></div>
+    <div class="dlg-body">
+      <p id="payIntro" style="margin-top:0"></p>
+      <div class="grid">
+        <label class="f">Montant reçu (F)<input name="montant" type="number" min="1" step="1" inputmode="numeric" required></label>
+        <label class="f">Date<input name="date" type="date" required></label>
+      </div>
+      <p class="reste" id="payReste"></p>
+    </div>
+    <div class="dlg-foot"><div class="r"><button type="button" class="btn" data-close>Annuler</button><button type="submit" class="btn primary">Encaisser</button></div></div>
   </form>
 </dialog>
 
@@ -321,7 +403,9 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
   function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
   function savePwds(){lsSet(LS_PWD,pwds)}
   pwds=lsGet(LS_PWD,{});
-  clients=lsGet(LS_DATA,[]);
+  // Ancien format : paye=false voulait dire « non payé » -> crédit du prix client
+  function norm(c){ if(c.credit===undefined||c.credit===null){ c.credit=c.paye===false?(+c.prixClient||0):0; } c.credit=Math.max(0,+c.credit||0); delete c.paye; if(!Array.isArray(c.remb))c.remb=[]; return c; }
+  clients=lsGet(LS_DATA,[]).map(norm);
   render();
 
   // ---------- chiffrement des mots de passe (AES-GCM, clé dérivée du code secret) ----------
@@ -387,7 +471,7 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
       coll.onSnapshot(async snap=>{
         const sd=snap.docs.find(x=>x.id==="settings"&&x.exists);
         settings=sd?sd.data():null;
-        const remote=snap.docs.filter(x=>x.exists&&x.id.startsWith("c_")).map(x=>({id:x.id,...x.data()}));
+        const remote=snap.docs.filter(x=>x.exists&&x.id.startsWith("c_")).map(x=>norm({id:x.id,...x.data()}));
         if(first){
           first=false;
           // First sync: push local-only clients up (migration from browser storage)
@@ -410,16 +494,23 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
     $("#stSoon").textContent=clients.filter(c=>status(c)==="warn").length;
     $("#stExp").textContent=clients.filter(c=>status(c)==="bad").length;
     $("#stProfit").textContent=fmt(act.reduce((s,c)=>s+(+c.prixClient||0)-(+c.prixStarlink||0),0));
+    const debt=clients.filter(c=>c.credit>0), totalDebt=debt.reduce((s,c)=>s+c.credit,0);
+    $("#stCredit").textContent=fmt(totalDebt);
+    $("#stCreditL").textContent=debt.length?`Crédits à recevoir (${debt.length} client${debt.length>1?"s":""})`:"Crédits à recevoir";
+    $("#creditSum").classList.toggle("on",filter==="credit"&&debt.length>0);
+    $("#creditSumL").textContent=`${debt.length} client${debt.length>1?"s":""} vous doi${debt.length>1?"vent":"t"} de l'argent`;
+    $("#creditSumV").textContent=fmt(totalDebt);
 
     const q=query.trim().toLowerCase();
     let rows=clients.filter(c=>{
-      if(filter==="unpaid"&&c.paye)return false;
+      if(filter==="credit"&&!(c.credit>0))return false;
       if(["ok","warn","bad"].includes(filter)&&status(c)!==filter)return false;
       if(!q)return true;
       return [c.nom,c.email,c.tel,c.kit,c.notes].some(v=>String(v||"").toLowerCase().includes(q));
-    }).sort((a,b)=>daysLeft(a)-daysLeft(b));
+    }).sort((a,b)=>filter==="credit"?b.credit-a.credit:daysLeft(a)-daysLeft(b));
 
     const list=$("#list");
+    saveReminders();
     if(!clients.length){
       list.innerHTML='<div class="empty"><strong>Aucun client pour l\'instant</strong>Ajoutez votre premier compte Starlink pour suivre ses échéances.<br><br><button class="btn primary" data-act="add">Ajouter un client</button></div>';
       $("#foot").textContent=""; return;
@@ -438,13 +529,13 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
         <div class="c-id"><div class="name">${esc(c.nom)}</div><div class="meta">${esc(c.tel||"")}${c.tel&&c.forfait?" — ":""}${esc(c.forfait||"")}</div><div class="meta">Ouvert le ${frDate(c.ouverture)}</div></div>
         <div class="c-acct"><div class="meta" style="color:var(--ink)">${esc(c.email||"—")}</div>${pwHtml}${c.kit?`<div class="meta">${esc(c.kit)}</div>`:""}</div>
         <div class="gauge s-${s}"><span class="date">${frDate(c.fin)}</span><div class="bar"><i style="width:${s==="bad"?100:pct}%"></i></div><span class="left">${left}</span></div>
-        <div class="money"><div>${fmt(c.prixStarlink)} → ${fmt(c.prixClient)}</div><div>Bénéfice <span class="m ${marge<0?"neg":""}">${fmt(marge)}</span></div><span class="paid ${c.paye?"yes":"no"}">${c.paye?"Payé":"Non payé"}</span></div>
-        <div class="acts">${c.tel?`<a class="btn small" href="tel:${esc(c.tel.replace(/[^\d+]/g,""))}">Appeler</a><a class="btn small wa" href="${waLink(c)}" target="_blank" rel="noopener">WhatsApp</a>`:""}<button class="btn small" data-act="renew" data-id="${c.id}">Renouveler</button><button class="btn small" data-act="edit" data-id="${c.id}">Modifier</button></div>
+        <div class="money"><div>${fmt(c.prixStarlink)} → ${fmt(c.prixClient)}</div><div>Bénéfice <span class="m ${marge<0?"neg":""}">${fmt(marge)}</span></div><span class="paid ${c.credit>0?"no":"yes"}">${c.credit>0?"Crédit : "+fmt(c.credit):"Payé"}</span></div>
+        <div class="acts">${c.tel?`<a class="btn small" href="tel:${esc(c.tel.replace(/[^\d+]/g,""))}">Appeler</a><a class="btn small wa" href="${waLink(c)}" target="_blank" rel="noopener">WhatsApp</a>`:""}${c.credit>0?`<button class="btn small" data-act="pay" data-id="${c.id}" style="color:var(--bad)">Encaisser</button>`:""}<button class="btn small" data-act="renew" data-id="${c.id}">Renouveler</button><button class="btn small" data-act="edit" data-id="${c.id}">Modifier</button></div>
       </div>`;
     }
     list.innerHTML=h;
     const tot=clients.length;
-    $("#foot").textContent=`${rows.length} sur ${tot} client${tot>1?"s":""}. Trié par échéance la plus proche.`;
+    $("#foot").textContent=`${rows.length} sur ${tot} client${tot>1?"s":""}. ${filter==="credit"?"Trié par crédit le plus élevé.":"Trié par échéance la plus proche."}`;
   }
 
   // Lien WhatsApp avec rappel d'échéance (numéros à 8 chiffres = Niger, +227)
@@ -452,14 +543,64 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
     let d=String(c.tel||"").replace(/\D/g,""); if(d.startsWith("00"))d=d.slice(2); if(d.length===8)d="227"+d;
     const n=daysLeft(c);
     const quand=n<0?`a expiré le ${frDate(c.fin)}`:`expire le ${frDate(c.fin)}`;
-    const msg=`Bonjour ${c.nom}, votre abonnement Starlink ${quand}. Montant du renouvellement : ${fmt(c.prixClient)}. Merci.`;
+    const msg=(filter==="credit"&&c.credit>0)
+      ?`Bonjour ${c.nom}, il reste ${fmt(c.credit)} à régler pour votre abonnement Starlink. Merci.`
+      :`Bonjour ${c.nom}, votre abonnement Starlink ${quand}. Montant du renouvellement : ${fmt(c.prixClient)}.${c.credit>0?" Reste à payer sur les mois précédents : "+fmt(c.credit)+".":""} Merci.`;
     return "https://wa.me/"+d+"?text="+encodeURIComponent(msg);
   }
+
+  // ---------- rappels (notifications) ----------
+  // Copie des échéances dans IndexedDB : le service worker peut la lire même appli fermée
+  function idb(){return new Promise((res,rej)=>{const r=indexedDB.open("slk",1);r.onupgradeneeded=()=>r.result.createObjectStore("kv");r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+  async function kvSet(k,v){try{const d=await idb();await new Promise(r=>{const t=d.transaction("kv","readwrite");t.objectStore("kv").put(v,k);t.oncomplete=r;t.onerror=r})}catch(e){}}
+  var remSig="";
+  function saveReminders(){
+    const list=clients.map(c=>({id:c.id,nom:c.nom,fin:c.fin,prixClient:+c.prixClient||0}));
+    const sig=JSON.stringify(list); if(sig===remSig)return; remSig=sig;
+    kvSet("reminders",list).then(triggerCheck);
+  }
+  function triggerCheck(){
+    if(!("Notification" in window)||Notification.permission!=="granted"||!("serviceWorker" in navigator))return;
+    navigator.serviceWorker.ready.then(r=>{ if(r.active) r.active.postMessage({type:"check"}); });
+  }
+  async function periodicOn(){
+    try{ const reg=await navigator.serviceWorker.ready; if(!("periodicSync" in reg))return false; const tags=await reg.periodicSync.getTags(); return tags.includes("rappels-starlink"); }catch(e){return false}
+  }
+  async function updRemBtn(){
+    const b=$("#btnRappels"); if(!b)return;
+    const granted=("Notification" in window)&&Notification.permission==="granted";
+    if(!granted){ b.textContent="Activer les rappels d'échéance"; return; }
+    b.textContent=(await periodicOn())?"Rappels activés, même appli fermée":"Rappels activés à l'ouverture de l'appli";
+  }
+  async function enableReminders(){
+    if(!("Notification" in window)||!("serviceWorker" in navigator)){toast("Notifications non disponibles ici. Ouvrez l'appli installée depuis l'écran d'accueil.");return}
+    const perm=await Notification.requestPermission();
+    if(perm!=="granted"){toast("Notifications refusées. Autorisez-les dans les réglages de Chrome.");return}
+    let periodic=false;
+    try{
+      const reg=await navigator.serviceWorker.ready;
+      if("periodicSync" in reg){
+        const st=await navigator.permissions.query({name:"periodic-background-sync"});
+        if(st.state==="granted"){ await reg.periodicSync.register("rappels-starlink",{minInterval:12*60*60*1000}); periodic=true; }
+      }
+    }catch(e){}
+    remSig=""; saveReminders(); triggerCheck(); updRemBtn();
+    toast(periodic?"Rappels activés, même appli fermée":"Rappels activés à l'ouverture. Installez l'appli pour les recevoir appli fermée.");
+  }
+  $("#btnRappels").addEventListener("click",enableReminders);
+  updRemBtn();
 
   // ---------- form ----------
   const fc=$("#formClient"), dc=$("#dlgClient");
   function updMarge(){const m=(+fc.prixClient.value||0)-(+fc.prixStarlink.value||0);$("#margeLive").innerHTML=(fc.prixClient.value||fc.prixStarlink.value)?`Bénéfice par mois : <b style="color:${m<0?"var(--bad)":"var(--ok)"}">${fmt(m)}</b>`:""}
   fc.prixClient.addEventListener("input",updMarge);fc.prixStarlink.addEventListener("input",updMarge);
+
+  function updCredit(){
+    const isCredit=fc.modePay.value==="credit";
+    $("#creditWrap").style.display=isCredit?"":"none";
+    if(isCredit&&!fc.credit.value) fc.credit.value=fc.prixClient.value||"";
+  }
+  fc.querySelectorAll('input[name="modePay"]').forEach(x=>x.addEventListener("change",updCredit));
 
   function openForm(id){
     editingId=id||null; fc.reset();
@@ -468,12 +609,15 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
     $("#btnDelete").style.visibility=c?"visible":"hidden";
     if(c){
       for(const k of ["nom","tel","email","kit","forfait","ouverture","fin","prixStarlink","prixClient","notes"]) fc[k].value=c[k]??"";
-      fc.paye.checked=!!c.paye; fc.mdp.value=pwds[c.id]||"";
+      fc.credit.value=c.credit||""; fc.modePay.value=c.credit>0?"credit":"paye"; fc.mdp.value=pwds[c.id]||"";
     }else{
       fc.ouverture.value=iso(today()); fc.fin.value=addMonth(iso(today()));
     }
+    updCredit();
     const hist=(c&&c.hist)||[];
-    $("#histWrap").innerHTML=hist.length?`<div class="section-t">Historique des paiements</div><div class="table-scroll"><table class="hist"><tr><th>Date</th><th>Jusqu'au</th><th>Starlink</th><th>Client</th><th>Bénéfice</th></tr>${hist.slice().reverse().map(p=>`<tr><td>${frDate(p.date)}</td><td>${frDate(p.fin)}</td><td>${fmt(p.prixStarlink)}</td><td>${fmt(p.prixClient)}</td><td>${fmt((+p.prixClient||0)-(+p.prixStarlink||0))}</td></tr>`).join("")}</table></div>`:"";
+    $("#histWrap").innerHTML=hist.length?`<div class="section-t">Historique des paiements</div><div class="table-scroll"><table class="hist"><tr><th>Date</th><th>Jusqu'au</th><th>Starlink</th><th>Client</th><th>Reçu</th></tr>${hist.slice().reverse().map(p=>`<tr><td>${frDate(p.date)}</td><td>${frDate(p.fin)}</td><td>${fmt(p.prixStarlink)}</td><td>${fmt(p.prixClient)}</td><td>${p.recu===undefined?"—":fmt(p.recu)}</td></tr>`).join("")}</table></div>`:"";
+    const remb=(c&&c.remb)||[];
+    if(remb.length) $("#histWrap").innerHTML+=`<div class="section-t">Remboursements de crédit</div><div class="table-scroll"><table class="hist"><tr><th>Date</th><th>Montant reçu</th></tr>${remb.slice().reverse().map(x=>`<tr><td>${frDate(x.date)}</td><td>${fmt(x.montant)}</td></tr>`).join("")}</table></div>`;
     updMarge(); dc.showModal(); fc.nom.focus();
   }
 
@@ -481,8 +625,8 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
     e.preventDefault();
     if(!fc.nom.value.trim()||!fc.fin.value){fc.reportValidity();return}
     const prev=clients.find(x=>x.id===editingId);
-    let c={id:editingId||newId(),mdpEnc:prev?prev.mdpEnc:undefined,nom:fc.nom.value.trim(),tel:fc.tel.value.trim(),email:fc.email.value.trim(),kit:fc.kit.value.trim(),forfait:fc.forfait.value,ouverture:fc.ouverture.value,fin:fc.fin.value,prixStarlink:+fc.prixStarlink.value||0,prixClient:+fc.prixClient.value||0,paye:fc.paye.checked,notes:fc.notes.value.trim(),hist:prev?.hist||[]};
-    if(!prev) c.hist=[{date:c.ouverture||iso(today()),fin:c.fin,prixStarlink:c.prixStarlink,prixClient:c.prixClient}];
+    let c={id:editingId||newId(),mdpEnc:prev?prev.mdpEnc:undefined,nom:fc.nom.value.trim(),tel:fc.tel.value.trim(),email:fc.email.value.trim(),kit:fc.kit.value.trim(),forfait:fc.forfait.value,ouverture:fc.ouverture.value,fin:fc.fin.value,prixStarlink:+fc.prixStarlink.value||0,prixClient:+fc.prixClient.value||0,credit:fc.modePay.value==="credit"?Math.max(0,+fc.credit.value||0):0,notes:fc.notes.value.trim(),hist:prev?.hist||[],remb:prev?.remb||[]};
+    if(!prev) c.hist=[{date:c.ouverture||iso(today()),fin:c.fin,prixStarlink:c.prixStarlink,prixClient:c.prixClient,recu:Math.max(0,c.prixClient-c.credit)}];
     const mdp=fc.mdp.value, mdpChanged=mdp!==(pwds[c.id]||"");
     if(mdp)pwds[c.id]=mdp; else delete pwds[c.id]; savePwds();
     if(c.mdpEnc===undefined) delete c.mdpEnc;
@@ -507,15 +651,53 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
     const base=daysLeft(c)<0?iso(today()):c.fin;
     fr.fin.value=addMonth(base); fr.date.value=iso(today());
     fr.prixStarlink.value=c.prixStarlink||""; fr.prixClient.value=c.prixClient||"";
-    dr.showModal();
+    fr.modePay.value="paye"; updRenew(); dr.showModal();
   }
+  function renewRecu(){
+    const m=fr.modePay.value, prix=+fr.prixClient.value||0;
+    return m==="paye"?prix:m==="credit"?0:Math.min(prix,Math.max(0,+fr.recu.value||0));
+  }
+  function updRenew(){
+    const m=fr.modePay.value, c=clients.find(x=>x.id===renewId);
+    $("#recuWrap").style.display=m==="partiel"?"":"none";
+    const prix=+fr.prixClient.value||0, ajout=prix-renewRecu(), ancien=c?c.credit:0, total=ancien+ajout;
+    $("#renewReste").innerHTML=total>0
+      ?`Crédit après ce renouvellement : <b>${fmt(total)}</b>${ancien>0?` (dont ${fmt(ancien)} des mois précédents)`:""}`
+      :`Le client ne doit rien : <b class="zero">${fmt(0)}</b>`;
+  }
+  fr.querySelectorAll('input[name="modePay"]').forEach(x=>x.addEventListener("change",updRenew));
+  fr.recu.addEventListener("input",updRenew); fr.prixClient.addEventListener("input",updRenew);
   fr.addEventListener("submit",async e=>{
     e.preventDefault();
     const c=clients.find(x=>x.id===renewId); if(!c)return;
-    const p={date:fr.date.value,fin:fr.fin.value,prixStarlink:+fr.prixStarlink.value||0,prixClient:+fr.prixClient.value||0};
-    const u={...c,fin:p.fin,prixStarlink:p.prixStarlink,prixClient:p.prixClient,paye:fr.paye.checked,hist:[...(c.hist||[]),p]};
+    const p={date:fr.date.value,fin:fr.fin.value,prixStarlink:+fr.prixStarlink.value||0,prixClient:+fr.prixClient.value||0,recu:renewRecu()};
+    const u={...c,fin:p.fin,prixStarlink:p.prixStarlink,prixClient:p.prixClient,credit:(c.credit||0)+(p.prixClient-p.recu),hist:[...(c.hist||[]),p]};
     clients=clients.map(x=>x.id===u.id?u:x);
     dr.close(); render(); await persist(u); toast("Abonnement renouvelé jusqu'au "+frDate(p.fin));
+  });
+
+  // ---------- encaisser un crédit ----------
+  const fp=$("#formPay"), dp=$("#dlgPay"); let payId=null;
+  function openPay(id){
+    const c=clients.find(x=>x.id===id); if(!c)return; payId=id; fp.reset();
+    $("#payTitle").textContent="Encaisser — "+c.nom;
+    $("#payIntro").innerHTML=`Le client doit <b style="color:var(--bad)">${fmt(c.credit)}</b>.`;
+    fp.montant.value=c.credit; fp.montant.max=c.credit; fp.date.value=iso(today()); updPay(); dp.showModal(); fp.montant.focus();
+  }
+  function updPay(){
+    const c=clients.find(x=>x.id===payId); if(!c)return;
+    const reste=Math.max(0,c.credit-(+fp.montant.value||0));
+    $("#payReste").innerHTML=reste>0?`Reste à payer après : <b>${fmt(reste)}</b>`:`Crédit soldé : <b class="zero">${fmt(0)}</b>`;
+  }
+  fp.montant.addEventListener("input",updPay);
+  fp.addEventListener("submit",async e=>{
+    e.preventDefault();
+    const c=clients.find(x=>x.id===payId); if(!c)return;
+    const m=Math.min(c.credit,Math.max(0,+fp.montant.value||0)); if(!m){fp.reportValidity();return}
+    const u={...c,credit:c.credit-m,remb:[...(c.remb||[]),{date:fp.date.value,montant:m}]};
+    clients=clients.map(x=>x.id===u.id?u:x);
+    dp.close(); render(); await persist(u);
+    toast(u.credit>0?`${fmt(m)} encaissé. Reste ${fmt(u.credit)}`:`Crédit soldé pour ${u.nom}`);
   });
 
   document.querySelectorAll("dialog [data-close]").forEach(b=>b.addEventListener("click",()=>b.closest("dialog").close()));
@@ -524,6 +706,9 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
   $("#btnAdd").addEventListener("click",()=>openForm());
   $("#fab").addEventListener("click",()=>openForm());
   $("#q").addEventListener("input",e=>{query=e.target.value;render()});
+  function setFilter(f){ filter=f; document.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x.dataset.f===f?"true":"false")); render(); }
+  $("#stCreditBox").addEventListener("click",()=>setFilter("credit"));
+  $("#stCreditBox").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();setFilter("credit")}});
   document.querySelectorAll(".chip").forEach(ch=>ch.addEventListener("click",()=>{
     filter=ch.dataset.f; document.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x===ch?"true":"false")); render();
   }));
@@ -533,6 +718,7 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
     if(a==="add")openForm();
     else if(a==="edit")openForm(id);
     else if(a==="renew")openRenew(id);
+    else if(a==="pay")openPay(id);
     else if(a==="unlock")openLock();
     else if(a==="eye"){shown.has(id)?shown.delete(id):shown.add(id);render()}
     else if(a==="copy"){try{await navigator.clipboard.writeText(pwds[id]||"");toast("Mot de passe copié")}catch(_){shown.add(id);render();toast("Copie impossible — mot de passe affiché")}}
@@ -589,7 +775,7 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
       if(!confirm(`Restaurer ${arr.length} client(s) ? Les clients existants avec le même identifiant seront remplacés.`))return;
       for(const r of arr){
         const c={...r}; c.id=(c.id&&String(c.id).startsWith("c_"))?c.id:newId();
-        if(c.mdp)pwds[c.id]=c.mdp; delete c.mdp; c.hist=Array.isArray(c.hist)?c.hist:[];
+        if(c.mdp)pwds[c.id]=c.mdp; delete c.mdp; c.hist=Array.isArray(c.hist)?c.hist:[]; norm(c);
         delete c.mdpEnc; savePwds();
         const cc=key?await withEnc(c):c;
         const i=clients.findIndex(x=>x.id===cc.id); if(i>=0)clients[i]=cc; else clients.push(cc);
@@ -601,6 +787,85 @@ a.btn{text-decoration:none;color:var(--ink);display:inline-flex;align-items:cent
 })();
 </script>
 
+
+<script>
+// ---------- Mot de passe d'ouverture de l'appli ----------
+(function(){
+  "use strict";
+  const K="slk_lock_v1", LOCK_AFTER=60000, te=new TextEncoder();
+  const $=id=>document.getElementById(id);
+  const gate=$("gate"), cur=$("gCur"), n1=$("gN1"), n2=$("gN2"), err=$("gateErr"), btn=$("gateBtn"), link=$("gateLink");
+  const b64=u=>{let s="";new Uint8Array(u).forEach(b=>s+=String.fromCharCode(b));return btoa(s)};
+  const unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+  let mode="unlock", fails=0, until=0, hiddenAt=0;
+
+  function getLock(){try{return JSON.parse(localStorage.getItem(K))}catch(e){return null}}
+  async function hash(pw,salt){
+    const k=await crypto.subtle.importKey("raw",te.encode(pw),"PBKDF2",false,["deriveBits"]);
+    return b64(await crypto.subtle.deriveBits({name:"PBKDF2",salt:unb64(salt),iterations:150000,hash:"SHA-256"},k,256));
+  }
+  async function store(pw){
+    const salt=b64(crypto.getRandomValues(new Uint8Array(16)));
+    localStorage.setItem(K,JSON.stringify({salt,hash:await hash(pw,salt)}));
+  }
+  async function check(pw){const l=getLock();return !!l&&(await hash(pw,l.salt))===l.hash}
+
+  function show(m){
+    mode=m; err.textContent=""; cur.value=n1.value=n2.value="";
+    document.querySelectorAll("dialog[open]").forEach(d=>d.close());
+    document.body.classList.add("locked"); gate.hidden=false;
+    cur.hidden=m!=="change"; n2.hidden=m==="unlock";
+    n1.placeholder=m==="unlock"?"Mot de passe":"Nouveau mot de passe";
+    if(m==="setup"){ $("gateH").textContent="Créer un mot de passe"; $("gateP").textContent="Il sera demandé à chaque ouverture de l'appli."; btn.textContent="Créer le mot de passe"; link.textContent=""; }
+    if(m==="unlock"){ $("gateH").textContent="Comptes Starlink clients"; $("gateP").textContent="Entrez votre mot de passe pour ouvrir l'appli."; btn.textContent="Ouvrir"; link.textContent="Mot de passe oublié ?"; }
+    if(m==="change"){ $("gateH").textContent="Changer le mot de passe"; $("gateP").textContent="Entrez l'ancien mot de passe, puis le nouveau."; btn.textContent="Changer le mot de passe"; link.textContent="Annuler"; }
+    setTimeout(()=>(m==="change"?cur:n1).focus(),50);
+  }
+  function hide(){document.body.classList.remove("locked"); gate.hidden=true; cur.value=n1.value=n2.value="";}
+
+  $("gateForm").addEventListener("submit",async e=>{
+    e.preventDefault(); err.textContent="";
+    if(Date.now()<until){err.textContent=`Trop d'essais. Réessayez dans ${Math.ceil((until-Date.now())/1000)} s.`;return}
+    const validateNew=()=>{
+      if(n1.value.length<4){err.textContent="Le mot de passe doit faire au moins 4 caractères.";return false}
+      if(n1.value!==n2.value){err.textContent="Les deux mots de passe ne correspondent pas.";return false}
+      return true;
+    };
+    btn.disabled=true;
+    try{
+      if(mode==="setup"){ if(validateNew()){ await store(n1.value); hide(); } }
+      else if(mode==="unlock"){
+        if(await check(n1.value)){ fails=0; hide(); }
+        else{ fails++; n1.value=""; if(fails>=5){fails=0;until=Date.now()+30000;err.textContent="Trop d'essais. Réessayez dans 30 s.";} else err.textContent="Mot de passe incorrect."; }
+      }
+      else if(mode==="change"){
+        if(!(await check(cur.value))) err.textContent="L'ancien mot de passe est incorrect.";
+        else if(validateNew()){ await store(n1.value); hide(); }
+      }
+    }finally{btn.disabled=false}
+  });
+
+  link.addEventListener("click",()=>{
+    if(mode==="change"){hide();return}
+    if(mode!=="unlock")return;
+    if(!confirm("Sans le mot de passe, la seule solution est d'effacer toutes les données de l'appli (clients et mots de passe Starlink).\n\nVous pourrez ensuite les récupérer avec « Restaurer » si vous avez un fichier de sauvegarde.\n\nTout effacer ?"))return;
+    ["slk_clients_v1","slk_pwd_v1","slk_code_v1",K].forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});
+    location.reload();
+  });
+
+  $("btnLockNow").addEventListener("click",()=>{ if(getLock()) show("unlock"); });
+  $("btnChangePw").addEventListener("click",()=>show("change"));
+
+  // Reverrouille si l'appli est restée en arrière-plan plus d'une minute
+  document.addEventListener("visibilitychange",()=>{
+    if(document.hidden){hiddenAt=Date.now();return}
+    if(gate.hidden&&getLock()&&hiddenAt&&Date.now()-hiddenAt>LOCK_AFTER) show("unlock");
+  });
+
+  if(!window.crypto||!crypto.subtle){ hide(); return; } // navigateur trop ancien : pas de verrouillage possible
+  show(getLock()?"unlock":"setup");
+})();
+</script>
 <script>
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
   window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
