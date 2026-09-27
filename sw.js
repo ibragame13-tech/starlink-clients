@@ -1,5 +1,5 @@
 // Garde l'appli en cache pour qu'elle marche sans Internet + rappels d'échéance
-const CACHE = "starlink-clients-v5";
+const CACHE = "starlink-clients-v6";
 const FILES = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); self.skipWaiting(); });
